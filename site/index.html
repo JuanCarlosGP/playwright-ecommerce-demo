@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Playwright Ecommerce E2E Demo — interactive shop showcase and test terminal simulator." />
+  <title>Playwright Ecommerce Demo — Live Showcase</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">▶</span>
+        <h1>Playwright Ecommerce E2E Demo</h1>
+      </div>
+      <p class="header-tagline">
+        Page Object Model · TypeScript · CI on GitHub Actions
+      </p>
+      <nav class="header-actions">
+        <a class="btn btn-ghost" href="https://github.com/JuanCarlosGP/playwright-ecommerce-demo" target="_blank" rel="noopener noreferrer">
+          View on GitHub
+        </a>
+      </nav>
+    </div>
+    <p class="simulator-note">
+      <strong>Terminal panel:</strong> simulated output for portfolio display only.
+      Real tests run locally with <code>npm run test:smoke</code> / <code>npm run test:regression</code> and in CI.
+    </p>
+  </header>
+
+  <div class="view-tabs" role="tablist" aria-label="Showcase panels">
+    <button type="button" class="view-tab active" role="tab" aria-selected="true" aria-controls="panel-shop" id="tab-shop" data-panel="shop">Shop demo</button>
+    <button type="button" class="view-tab" role="tab" aria-selected="false" aria-controls="panel-terminal" id="tab-terminal" data-panel="terminal">Test terminal</button>
+    <button type="button" class="view-tab view-tab-split" role="tab" aria-selected="false" id="tab-split" data-panel="split" hidden>Split view</button>
+  </div>
+
+  <main class="showcase" id="showcase">
+    <section class="panel panel-shop active" id="panel-shop" role="tabpanel" aria-labelledby="tab-shop">
+      <div id="shop-app" class="shop-root"></div>
+    </section>
+
+    <section class="panel panel-terminal" id="panel-terminal" role="tabpanel" aria-labelledby="tab-terminal" hidden>
+      <div class="terminal-wrap">
+        <div class="terminal-toolbar">
+          <div class="terminal-dots" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <span class="terminal-title">playwright — zsh</span>
+          <div class="terminal-controls">
+            <button type="button" class="btn btn-terminal" id="terminal-start">Start</button>
+            <button type="button" class="btn btn-terminal" id="terminal-replay" disabled>Replay</button>
+          </div>
+        </div>
+        <div class="terminal-body" id="terminal-output" aria-live="polite" aria-label="Simulated test output"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>MIT License · Built for <a href="https://github.com/JuanCarlosGP/playwright-ecommerce-demo">JuanCarlosGP/playwright-ecommerce-demo</a></p>
+  </footer>
+
+  <script src="js/shop.js" defer></script>
+  <script src="js/terminal.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>
