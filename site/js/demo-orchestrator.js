@@ -119,12 +119,19 @@
     document.body.classList.add('demo-running');
     window.ShopDemo.reset();
     window.ShopDemo.setInteractionLocked(true);
+    if (window.ShowcaseLayout?.focusPanel && window.innerWidth < 960) {
+      window.ShowcaseLayout.focusPanel('terminal');
+      window.ShowcaseLayout.updateMobileSyncBanner?.('terminal');
+    }
     await window.ShopDemo.sleep(120);
   }
 
   async function onRunEnd() {
     window.ShopDemo.setInteractionLocked(false);
     document.body.classList.remove('demo-running');
+    window.ShowcaseLayout?.updateMobileSyncBanner?.(null);
+    const banner = document.getElementById('mobile-sync-banner');
+    if (banner) banner.hidden = true;
   }
 
   window.DemoOrchestrator = {
