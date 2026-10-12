@@ -1,0 +1,13 @@
+name = "playwright-pages-ci-proxy"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# Non-secret defaults (override in dashboard or via wrangler secret)
+[vars]
+GITHUB_OWNER = "JuanCarlosGP"
+GITHUB_REPO = "playwright-ecommerce-demo"
+WORKFLOW_FILE = "playwright.yml"
+DEFAULT_REF = "main"
+ALLOWED_ORIGINS = "https://juancarlosgp.github.io"
+
+# Set secrets with: npx wrangler secret put GITHUB_TOKEN

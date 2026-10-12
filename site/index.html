@@ -33,8 +33,9 @@
     </div>
     <p class="simulator-note">
       <span class="note-label">Showcase</span>
-      The shop is a lightweight stand-in for Sauce Demo. The terminal simulates
+      The shop is a lightweight stand-in for Sauce Demo. By default the terminal simulates
       <code>npm run test:smoke</code> and <code>npm run test:regression</code> — each passing line drives the UI in parallel.
+      With a deployed CI proxy (<code>site/js/live-config.js</code>), Start can show real Actions logs while the shop still follows parsed milestones (Playwright never runs in the browser).
       Real suites live under <code>tests/</code> with POMs in <code>pages/</code>.
     </p>
   </header>
@@ -77,7 +78,7 @@
             <button type="button" class="btn btn-terminal" id="terminal-replay">Replay</button>
           </div>
         </div>
-        <div class="terminal-body" id="terminal-output" aria-live="polite" aria-label="Simulated test output"></div>
+        <div class="terminal-body" id="terminal-output" aria-live="polite" aria-label="Test runner output (simulated or CI via proxy)"></div>
       </div>
     </section>
   </main>
@@ -86,8 +87,10 @@
     <p>MIT License · <a href="https://github.com/JuanCarlosGP/playwright-ecommerce-demo">JuanCarlosGP/playwright-ecommerce-demo</a></p>
   </footer>
 
+  <script src="js/live-config.js" defer></script>
   <script src="js/shop.js" defer></script>
   <script src="js/demo-orchestrator.js" defer></script>
+  <script src="js/live-runner.js" defer></script>
   <script src="js/terminal.js" defer></script>
   <script src="js/app.js" defer></script>
 </body>

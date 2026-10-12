@@ -12,7 +12,26 @@ Portfolio-quality end-to-end test automation for a public ecommerce demo. Built 
 The static site lives in `site/` (not `pages/`, which holds the Page Object Model). It includes:
 
 - **Shop demo** — self-contained Swag Labs–style UI: login, products, cart, and checkout success (no iframe to saucedemo.com).
-- **Terminal simulator** — portfolio animation of `npm run test:smoke` and `npm run test:regression` with real spec paths from this repo. Use **Start** / **Replay**; output is simulated, not a live Playwright run.
+- **Terminal simulator** — portfolio animation of `npm run test:smoke` and `npm run test:regression` with real spec paths from this repo. Use **Start** / **Replay**; output is simulated unless you configure live CI (below).
+- **Optional LIVE (CI)** — set `proxyBaseUrl` in `site/js/live-config.js` to a deployed [pages CI proxy](infra/pages-ci-proxy/README.md). Start then dispatches the Playwright workflow on GitHub Actions and polls **real log text** through the proxy. The shop UI still moves via orchestrator heuristics on log milestones; Playwright does not run in the visitor’s browser.
+
+### Hybrid live CI (optional)
+
+```
+[GitHub Pages site]  --POST /start, GET /runs/:id-->  [Cloudflare Worker proxy]
+                                                              |
+                                                              v
+                                                    [GitHub Actions: playwright.yml]
+                                                              |
+                                         log text + status <--+
+```
+
+1. Add `workflow_dispatch` to `.github/workflows/playwright.yml` (already in repo).
+2. Deploy `infra/pages-ci-proxy/` with a `GITHUB_TOKEN` secret on the worker only — **never** in `site/` or the public repo.
+3. Set `site/js/live-config.js` → `proxyBaseUrl: 'https://your-worker.example.workers.dev'`.
+4. Re-publish Pages. The status chip shows **LIVE (CI)** when a proxy URL is set; **SIMULATED** when `proxyBaseUrl` is empty (default).
+
+Without a proxy, behavior is unchanged: simulated terminal + synced shop.
 
 ### Enabling GitHub Pages
 
@@ -91,7 +110,7 @@ playwright.config.ts
 
 ## CI
 
-On every push to `main` and on pull requests, GitHub Actions installs dependencies and Chromium, runs smoke then regression tests, and uploads the HTML report and traces on failure.
+On every push to `main`, on pull requests, and via **workflow_dispatch** (manual or from the Pages proxy), GitHub Actions installs dependencies and Chromium, runs smoke then regression tests, and uploads the HTML report and traces on failure.
 
 ## License
 
