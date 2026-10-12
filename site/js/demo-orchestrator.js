@@ -134,8 +134,56 @@
     if (banner) banner.hidden = true;
   }
 
+  /** Substrings matched against incoming CI log lines (once per key). */
+  const LOG_MILESTONES = [
+    {
+      key: 'smokeLogin',
+      shop: 'smokeLogin',
+      patterns: [/login\.spec\.ts/i, /standard user can log in/i],
+    },
+    {
+      key: 'regressionCheckout',
+      shop: 'regressionCheckout',
+      patterns: [/shopping\.spec\.ts.*checkout/i, /add item to cart and complete checkout/i],
+    },
+    {
+      key: 'regressionLogout',
+      shop: 'regressionLogout',
+      patterns: [/log out and return to login/i],
+    },
+    {
+      key: 'lockedUser',
+      shop: 'lockedUser',
+      patterns: [/login-locked\.spec\.ts/i, /locked out user sees error/i],
+    },
+    {
+      key: 'sortZa',
+      shop: 'sortZa',
+      patterns: [/inventory-sort\.spec\.ts/i, /sort products name Z to A/i],
+    },
+    {
+      key: 'focusShop',
+      shop: 'focusShop',
+      patterns: [/test:regression/i, /playwright test --grep @regression/i],
+    },
+  ];
+
+  function matchLogMilestones(line, firedKeys) {
+    const hits = [];
+    for (const milestone of LOG_MILESTONES) {
+      if (firedKeys.has(milestone.key)) continue;
+      if (milestone.patterns.some((re) => re.test(line))) {
+        firedKeys.add(milestone.key);
+        hits.push(milestone.shop);
+      }
+    }
+    return hits;
+  }
+
   window.DemoOrchestrator = {
     FULL_SCRIPT,
+    LOG_MILESTONES,
+    matchLogMilestones,
     runShopAction,
     onRunStart,
     onRunEnd,

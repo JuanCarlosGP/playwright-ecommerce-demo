@@ -1,5 +1,5 @@
 /**
- * Simulated Playwright test run — synced with ShopDemo via DemoOrchestrator.
+ * Terminal UI — simulated script by default; optional LIVE (CI) via proxy + LiveRunner.
  */
 (function () {
   let running = false;
@@ -7,6 +7,10 @@
   let replayPending = false;
   let lastRunTriggerAt = 0;
   const RUN_CLICK_GUARD_MS = 700;
+
+  function liveModeEnabled() {
+    return window.LiveRunner?.isEnabled?.() === true;
+  }
 
   function getScript() {
     return window.DemoOrchestrator?.FULL_SCRIPT || [];
@@ -29,6 +33,19 @@
     return line;
   }
 
+  function appendLogLines(lines, applyMilestonesFromLive) {
+    const el = getOutputEl();
+    if (!el) return;
+    for (const text of lines) {
+      const className = applyMilestonesFromLive && window.LiveRunner
+        ? window.LiveRunner.classifyLine(text)
+        : text.startsWith('#')
+          ? 'dim'
+          : 'dim';
+      appendLine(el, text, className);
+    }
+  }
+
   async function typeLine(el, text, className, charDelay) {
     const line = document.createElement('p');
     line.className = `terminal-line ${className || ''}`.trim();
@@ -45,13 +62,30 @@
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  function setIdleChip() {
+    const chip = document.getElementById('terminal-status-chip');
+    if (!chip) return;
+    chip.classList.remove('is-live', 'is-running');
+    if (liveModeEnabled()) {
+      chip.textContent = 'LIVE (CI)';
+      chip.classList.add('is-live');
+    } else {
+      chip.textContent = 'SIMULATED';
+    }
+  }
+
   function setRunState(active) {
     const wrap = document.querySelector('.terminal-wrap');
     const chip = document.getElementById('terminal-status-chip');
     if (wrap) wrap.classList.toggle('terminal-running', active);
     if (chip) {
-      chip.textContent = active ? 'RUNNING' : 'SIMULATED';
-      chip.classList.toggle('is-live', active);
+      if (active) {
+        chip.textContent = liveModeEnabled() ? 'LIVE (CI)' : 'RUNNING';
+        chip.classList.add('is-running');
+        if (liveModeEnabled()) chip.classList.add('is-live');
+      } else {
+        setIdleChip();
+      }
     }
   }
 
@@ -87,6 +121,41 @@
     }
   }
 
+  async function runSimulated() {
+    await runScript(getScript());
+  }
+
+  async function runLive() {
+    try {
+      await window.LiveRunner.run({
+        shouldAbort: () => abort,
+        appendLogLines: (lines, fromCi) => {
+          appendLogLines(lines, fromCi);
+        },
+        onComplete: () => {},
+      });
+    } catch (err) {
+      const el = getOutputEl();
+      const msg = err.message || 'Live CI run failed';
+      if (el) {
+        appendLine(el, '', 'dim');
+        appendLine(el, `✘ ${msg}`, 'fail');
+        if (err.status === 401) {
+          appendLine(el, '# Proxy rejected the request (check worker GITHUB_TOKEN).', 'dim');
+        } else if (err.status === 403) {
+          appendLine(el, '# Forbidden — token may lack actions:write on this repo.', 'dim');
+        } else if (err.status === 429) {
+          appendLine(el, '# GitHub rate limit — try again later or reduce poll frequency.', 'dim');
+        }
+        appendLine(el, '# Falling back to simulated output…', 'dim');
+        appendLine(el, '', 'dim');
+      }
+      if (!abort) {
+        await runSimulated();
+      }
+    }
+  }
+
   function canTriggerRun() {
     if (running || replayPending) return false;
     const now = Date.now();
@@ -113,7 +182,11 @@
       await window.DemoOrchestrator.onRunStart();
     }
 
-    await runScript(getScript());
+    if (liveModeEnabled() && !abort) {
+      await runLive();
+    } else if (!abort) {
+      await runSimulated();
+    }
 
     if (window.DemoOrchestrator) {
       await window.DemoOrchestrator.onRunEnd();
@@ -157,7 +230,33 @@
     );
   }
 
+  function initPlaceholderLines() {
+    const el = getOutputEl();
+    if (!el) return;
+    if (liveModeEnabled()) {
+      appendLine(
+        el,
+        '# LIVE (CI) — Start dispatches Playwright on GitHub Actions; logs stream via proxy',
+        'dim',
+      );
+      appendLine(
+        el,
+        '# Shop motion follows parsed log milestones (Playwright does not run in your browser)',
+        'dim',
+      );
+    } else {
+      appendLine(el, '# Playwright POM showcase — terminal output is simulated', 'dim');
+      appendLine(
+        el,
+        '# Press Start: shop UI follows the same steps as tests/smoke + tests/regression',
+        'dim',
+      );
+    }
+    appendLine(el, '', 'dim');
+  }
+
   function init() {
+    setIdleChip();
     const startBtn = document.getElementById('terminal-start');
     const replayBtn = document.getElementById('terminal-replay');
     bindRunButton(startBtn, () => {
@@ -165,15 +264,9 @@
     });
     bindRunButton(replayBtn, replay);
     if (replayBtn) replayBtn.disabled = false;
-
-    const el = getOutputEl();
-    if (el) {
-      appendLine(el, '# Playwright POM showcase — terminal output is simulated', 'dim');
-      appendLine(el, '# Press Start: shop UI follows the same steps as tests/smoke + tests/regression', 'dim');
-      appendLine(el, '', 'dim');
-    }
+    initPlaceholderLines();
   }
 
-  window.TerminalSimulator = { startRun, replay, init };
+  window.TerminalSimulator = { startRun, replay, init, appendLogLines, setIdleChip };
   document.addEventListener('DOMContentLoaded', init);
 })();
