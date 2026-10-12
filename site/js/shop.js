@@ -114,15 +114,6 @@
     document.querySelectorAll('.demo-highlight').forEach((el) => el.classList.remove('demo-highlight'));
   }
 
-  async function pulseClick(el) {
-    if (!el) return;
-    el.classList.add('demo-pulse');
-    await sleep(180);
-    el.click();
-    await sleep(220);
-    el.classList.remove('demo-pulse');
-  }
-
   function attemptLogin(username, password) {
     const errEl = document.getElementById('login-error');
     if (username === 'locked_out_user') {
