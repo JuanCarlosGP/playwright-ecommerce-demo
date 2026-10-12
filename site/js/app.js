@@ -3,6 +3,7 @@
  */
 (function () {
   const SPLIT_MIN_WIDTH = 960;
+  let currentMode = 'shop';
 
   function isWide() {
     return window.innerWidth >= SPLIT_MIN_WIDTH;
@@ -19,6 +20,7 @@
   }
 
   function setPanelVisibility(mode) {
+    currentMode = mode;
     const showcase = document.getElementById('showcase');
     const shopPanel = document.getElementById('panel-shop');
     const termPanel = document.getElementById('panel-terminal');
@@ -44,6 +46,16 @@
     }
   }
 
+  function focusPanel(panel) {
+    if (isWide()) {
+      if (currentMode !== 'split') setPanelVisibility('split');
+      return;
+    }
+    if (panel === 'terminal' || panel === 'shop') {
+      setPanelVisibility(panel);
+    }
+  }
+
   function initTabs() {
     const splitTab = document.getElementById('tab-split');
     if (splitTab) {
@@ -52,6 +64,7 @@
 
     document.querySelectorAll('.view-tab').forEach((tab) => {
       tab.addEventListener('click', () => {
+        if (document.body.classList.contains('demo-running')) return;
         const panel = tab.dataset.panel;
         if (panel === 'split' && !isWide()) return;
         setPanelVisibility(panel);
@@ -65,6 +78,8 @@
         setPanelVisibility('shop');
       } else if (isWide() && document.getElementById('tab-split')?.classList.contains('active')) {
         setPanelVisibility('split');
+      } else if (isWide() && document.body.classList.contains('demo-running')) {
+        setPanelVisibility('split');
       }
     });
 
@@ -74,6 +89,8 @@
       setPanelVisibility('shop');
     }
   }
+
+  window.ShowcaseLayout = { focusPanel, setPanelVisibility };
 
   document.addEventListener('DOMContentLoaded', initTabs);
 })();
