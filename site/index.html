@@ -3,56 +3,66 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Playwright Ecommerce E2E Demo — interactive shop showcase and test terminal simulator." />
-  <title>Playwright Ecommerce Demo — Live Showcase</title>
+  <meta name="description" content="Playwright ecommerce E2E showcase — Page Object Model, CI, and a synced terminal + shop demo." />
+  <title>Playwright Ecommerce Demo — QA Showcase</title>
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
 </head>
 <body>
+  <a class="skip-link" href="#showcase">Skip to demo</a>
+
   <header class="site-header">
+    <div class="header-grid" aria-hidden="true"></div>
     <div class="header-inner">
       <div class="brand">
-        <span class="brand-icon" aria-hidden="true">▶</span>
-        <h1>Playwright Ecommerce E2E Demo</h1>
+        <span class="brand-mark" aria-hidden="true">
+          <span class="brand-mark-inner">PW</span>
+        </span>
+        <div class="brand-copy">
+          <h1>Playwright Ecommerce E2E</h1>
+          <p class="header-tagline">Page Object Model · TypeScript · GitHub Actions CI</p>
+        </div>
       </div>
-      <p class="header-tagline">
-        Page Object Model · TypeScript · CI on GitHub Actions
-      </p>
-      <nav class="header-actions">
+      <nav class="header-actions" aria-label="Project links">
         <a class="btn btn-ghost" href="https://github.com/JuanCarlosGP/playwright-ecommerce-demo" target="_blank" rel="noopener noreferrer">
-          View on GitHub
+          Repository
         </a>
       </nav>
     </div>
     <p class="simulator-note">
-      <strong>Terminal panel:</strong> simulated output for portfolio display only.
-      Real tests run locally with <code>npm run test:smoke</code> / <code>npm run test:regression</code> and in CI.
+      <span class="note-label">Showcase</span>
+      The shop is a lightweight stand-in for Sauce Demo. The terminal simulates
+      <code>npm run test:smoke</code> and <code>npm run test:regression</code> — each passing line drives the UI in parallel.
+      Real suites live under <code>tests/</code> with POMs in <code>pages/</code>.
     </p>
   </header>
 
   <div class="view-tabs" role="tablist" aria-label="Showcase panels">
-    <button type="button" class="view-tab active" role="tab" aria-selected="true" aria-controls="panel-shop" id="tab-shop" data-panel="shop">Shop demo</button>
-    <button type="button" class="view-tab" role="tab" aria-selected="false" aria-controls="panel-terminal" id="tab-terminal" data-panel="terminal">Test terminal</button>
-    <button type="button" class="view-tab view-tab-split" role="tab" aria-selected="false" id="tab-split" data-panel="split" hidden>Split view</button>
+    <button type="button" class="view-tab active" role="tab" aria-selected="true" aria-controls="panel-shop" id="tab-shop" data-panel="shop">Shop</button>
+    <button type="button" class="view-tab" role="tab" aria-selected="false" aria-controls="panel-terminal" id="tab-terminal" data-panel="terminal">Terminal</button>
+    <button type="button" class="view-tab view-tab-split" role="tab" aria-selected="false" id="tab-split" data-panel="split" hidden>Split</button>
   </div>
 
   <main class="showcase" id="showcase">
     <section class="panel panel-shop active" id="panel-shop" role="tabpanel" aria-labelledby="tab-shop">
-      <div id="shop-app" class="shop-root"></div>
+      <div class="panel-label" aria-hidden="true">AUT under test</div>
+      <div id="shop-app" class="shop-root" tabindex="-1"></div>
     </section>
 
     <section class="panel panel-terminal" id="panel-terminal" role="tabpanel" aria-labelledby="tab-terminal" hidden>
+      <div class="panel-label panel-label--terminal" aria-hidden="true">Test runner</div>
       <div class="terminal-wrap">
         <div class="terminal-toolbar">
           <div class="terminal-dots" aria-hidden="true">
             <span></span><span></span><span></span>
           </div>
-          <span class="terminal-title">playwright — zsh</span>
+          <span class="terminal-title">zsh — playwright-ecommerce-demo</span>
+          <span class="terminal-chip" id="terminal-status-chip">SIMULATED</span>
           <div class="terminal-controls">
             <button type="button" class="btn btn-terminal" id="terminal-start">Start</button>
-            <button type="button" class="btn btn-terminal" id="terminal-replay" disabled>Replay</button>
+            <button type="button" class="btn btn-terminal" id="terminal-replay">Replay</button>
           </div>
         </div>
         <div class="terminal-body" id="terminal-output" aria-live="polite" aria-label="Simulated test output"></div>
@@ -61,10 +71,11 @@
   </main>
 
   <footer class="site-footer">
-    <p>MIT License · Built for <a href="https://github.com/JuanCarlosGP/playwright-ecommerce-demo">JuanCarlosGP/playwright-ecommerce-demo</a></p>
+    <p>MIT License · <a href="https://github.com/JuanCarlosGP/playwright-ecommerce-demo">JuanCarlosGP/playwright-ecommerce-demo</a></p>
   </footer>
 
   <script src="js/shop.js" defer></script>
+  <script src="js/demo-orchestrator.js" defer></script>
   <script src="js/terminal.js" defer></script>
   <script src="js/app.js" defer></script>
 </body>

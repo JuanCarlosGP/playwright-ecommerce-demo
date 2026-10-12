@@ -20,6 +20,12 @@
     checkout: { firstName: '', lastName: '', postalCode: '' },
   };
 
+  let interactionLocked = false;
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
   function formatPrice(n) {
     return `$${n.toFixed(2)}`;
   }
@@ -46,7 +52,26 @@
     return list;
   }
 
-  function addToCart(productId) {
+  function setInteractionLocked(locked) {
+    interactionLocked = locked;
+    const root = document.getElementById('shop-app');
+    if (root) root.classList.toggle('shop-locked', locked);
+  }
+
+  function guardManual() {
+    return interactionLocked;
+  }
+
+  function reset() {
+    state.view = 'login';
+    state.cart = [];
+    state.sort = 'az';
+    state.checkout = { firstName: '', lastName: '', postalCode: '' };
+    clearHighlights();
+    render();
+  }
+
+  function addToCart(productId, skipRender) {
     const product = PRODUCTS.find((p) => p.id === productId);
     if (!product) return;
     const existing = state.cart.find((c) => c.id === productId);
@@ -55,7 +80,7 @@
     } else {
       state.cart.push({ ...product, qty: 1 });
     }
-    render();
+    if (!skipRender) render();
   }
 
   function removeFromCart(productId) {
@@ -63,9 +88,201 @@
     render();
   }
 
+  async function typeIntoInput(input, value, charDelay = 28) {
+    if (!input) return;
+    input.value = '';
+    input.classList.add('demo-typing');
+    for (const ch of value) {
+      input.value += ch;
+      await sleep(charDelay);
+    }
+    input.classList.remove('demo-typing');
+  }
+
+  async function highlight(selector, duration = 1400) {
+    clearHighlights();
+    const root = document.getElementById('shop-app');
+    if (!root) return;
+    const el = root.querySelector(selector);
+    if (!el) return;
+    el.classList.add('demo-highlight');
+    await sleep(duration);
+    el.classList.remove('demo-highlight');
+  }
+
+  function clearHighlights() {
+    document.querySelectorAll('.demo-highlight').forEach((el) => el.classList.remove('demo-highlight'));
+  }
+
+  function attemptLogin(username, password) {
+    const errEl = document.getElementById('login-error');
+    if (username === 'locked_out_user') {
+      if (errEl) {
+        errEl.textContent = 'Sorry, this user has been locked out.';
+        errEl.hidden = false;
+      }
+      return false;
+    }
+    if (username === DEMO_USER.username && password === DEMO_USER.password) {
+      state.view = 'inventory';
+      if (errEl) errEl.hidden = true;
+      render();
+      return true;
+    }
+    if (errEl) {
+      errEl.textContent = 'Username and password do not match any user in this service.';
+      errEl.hidden = false;
+    }
+    return false;
+  }
+
+  async function loginAnimated(options = {}) {
+    const username = options.username ?? DEMO_USER.username;
+    const password = options.password ?? DEMO_USER.password;
+    const expectError = options.expectError ?? false;
+    const highlightInventory = options.highlightInventory ?? true;
+
+    state.view = 'login';
+    render();
+    await sleep(200);
+
+    const userInput = document.getElementById('username');
+    const passInput = document.getElementById('password');
+    const submit = document.querySelector('#login-form button[type="submit"]');
+
+    await highlight('#username', 500);
+    await typeIntoInput(userInput, username);
+    await sleep(120);
+    await highlight('#password', 500);
+    await typeIntoInput(passInput, password);
+    await sleep(150);
+    if (submit) submit.classList.add('demo-pulse');
+    attemptLogin(username, password);
+    await sleep(220);
+    if (submit) submit.classList.remove('demo-pulse');
+
+    if (expectError) {
+      await highlight('#login-error', 1200);
+      return false;
+    }
+
+    if (state.view === 'inventory' && highlightInventory) {
+      await sleep(280);
+      await highlight('[data-demo="product-grid"]', 1600);
+    }
+    return state.view === 'inventory';
+  }
+
+  function clearLoginError() {
+    const errEl = document.getElementById('login-error');
+    if (errEl) {
+      errEl.hidden = true;
+      errEl.textContent = '';
+    }
+    const userInput = document.getElementById('username');
+    const passInput = document.getElementById('password');
+    if (userInput) userInput.value = DEMO_USER.username;
+    if (passInput) passInput.value = DEMO_USER.password;
+  }
+
+  async function navigateAnimated(view) {
+    state.view = view;
+    render();
+    await sleep(350);
+  }
+
+  async function addToCartAnimated(productId) {
+    if (state.view !== 'inventory') {
+      state.view = 'inventory';
+      render();
+      await sleep(300);
+    }
+    const btn = document.querySelector(`[data-add="${productId}"]`);
+    await highlight(`[data-add="${productId}"]`, 600);
+    if (btn) btn.classList.add('demo-pulse');
+    addToCart(productId);
+    await sleep(280);
+    if (btn) btn.classList.remove('demo-pulse');
+    await highlight('.cart-badge', 800);
+  }
+
+  async function fillCheckoutAnimated(data) {
+    state.checkout = { ...state.checkout, ...data };
+    if (state.view !== 'checkout') {
+      state.view = 'checkout';
+      render();
+      await sleep(350);
+    }
+    const fields = [
+      ['#firstName', data.firstName],
+      ['#lastName', data.lastName],
+      ['#postalCode', data.postalCode],
+    ];
+    for (const [sel, val] of fields) {
+      const input = document.querySelector(sel);
+      await highlight(sel, 450);
+      await typeIntoInput(input, val || '');
+      await sleep(100);
+    }
+  }
+
+  async function completeCheckoutAnimated() {
+    const form = document.getElementById('checkout-form');
+    const submit = form?.querySelector('button[type="submit"]');
+    if (submit) submit.classList.add('demo-pulse');
+    state.checkout = {
+      firstName: document.querySelector('#firstName')?.value.trim() || state.checkout.firstName,
+      lastName: document.querySelector('#lastName')?.value.trim() || state.checkout.lastName,
+      postalCode: document.querySelector('#postalCode')?.value.trim() || state.checkout.postalCode,
+    };
+    state.view = 'success';
+    state.cart = [];
+    render();
+    await sleep(280);
+    if (submit) submit.classList.remove('demo-pulse');
+    await highlight('.success-panel', 1500);
+  }
+
+  async function logoutAnimated() {
+    const logoutBtn = document.querySelector('[data-action="logout"]');
+    if (!logoutBtn) {
+      state.view = 'login';
+      state.cart = [];
+      render();
+      return;
+    }
+    await highlight('[data-action="logout"]', 500);
+    if (logoutBtn) logoutBtn.classList.add('demo-pulse');
+    state.view = 'login';
+    state.cart = [];
+    render();
+    await sleep(320);
+    if (logoutBtn) logoutBtn.classList.remove('demo-pulse');
+    await sleep(80);
+    await highlight('.shop-login', 1000);
+  }
+
+  async function setSortAnimated(value) {
+    if (state.view !== 'inventory') {
+      state.view = 'inventory';
+      render();
+      await sleep(300);
+    }
+    const select = document.getElementById('sort');
+    if (!select) return;
+    await highlight('#sort', 600);
+    select.classList.add('demo-pulse');
+    state.sort = value;
+    select.value = value;
+    render();
+    await sleep(400);
+    select?.classList.remove('demo-pulse');
+  }
+
   function renderLogin(root) {
     root.innerHTML = `
-      <div class="shop-screen shop-login">
+      <div class="shop-screen shop-login" data-demo="login">
+        <p class="shop-eyebrow">Instrumented UI</p>
         <h2>Swag Labs</h2>
         <p class="hint">Demo credentials: <code>${DEMO_USER.username}</code> / <code>${DEMO_USER.password}</code></p>
         <form id="login-form">
@@ -77,24 +294,18 @@
             <label for="password">Password</label>
             <input id="password" name="password" type="password" autocomplete="current-password" value="${DEMO_USER.password}" />
           </div>
-          <button type="submit" class="btn btn-primary" style="width:100%">Login</button>
-          <p class="shop-error" id="login-error" hidden></p>
+          <button type="submit" class="btn btn-primary btn-block">Login</button>
+          <p class="shop-error" id="login-error" role="alert" hidden></p>
         </form>
       </div>
     `;
     root.querySelector('#login-form').addEventListener('submit', (e) => {
       e.preventDefault();
+      if (guardManual()) return;
       const username = root.querySelector('#username').value.trim();
       const password = root.querySelector('#password').value;
-      const err = root.querySelector('#login-error');
-      if (username === DEMO_USER.username && password === DEMO_USER.password) {
-        state.view = 'inventory';
-        err.hidden = true;
-        render();
-      } else {
-        err.textContent = 'Username and password do not match any user in this service.';
-        err.hidden = false;
-      }
+      attemptLogin(username, password);
+      if (state.view === 'inventory') render();
     });
   }
 
@@ -106,7 +317,7 @@
         <span class="user-meta">Hi, ${DEMO_USER.username}</span>
         <div class="shop-header-actions">
           <button type="button" class="btn btn-secondary btn-sm" data-nav="inventory">Products</button>
-          <button type="button" class="btn btn-secondary btn-sm" data-nav="cart">
+          <button type="button" class="btn btn-secondary btn-sm" data-nav="cart" aria-label="Cart">
             Cart<span class="cart-badge" ${count ? '' : 'hidden'}">${count}</span>
           </button>
           <button type="button" class="btn btn-danger btn-sm" data-action="logout">Logout</button>
@@ -119,21 +330,21 @@
     const products = sortedProducts();
     root.innerHTML = `
       ${headerBar()}
-      <div class="shop-screen">
-        <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;margin-bottom:0.5rem;padding:0 0.25rem">
-          <label for="sort" style="font-size:0.85rem;font-weight:600">Sort:</label>
-          <select id="sort" class="field" style="width:auto;margin:0">
+      <div class="shop-screen shop-inventory">
+        <div class="inventory-toolbar">
+          <label for="sort">Sort</label>
+          <select id="sort" class="sort-select" aria-label="Sort products">
             <option value="az" ${state.sort === 'az' ? 'selected' : ''}>Name (A to Z)</option>
             <option value="za" ${state.sort === 'za' ? 'selected' : ''}>Name (Z to A)</option>
             <option value="lohi" ${state.sort === 'lohi' ? 'selected' : ''}>Price (low to high)</option>
             <option value="hilo" ${state.sort === 'hilo' ? 'selected' : ''}>Price (high to low)</option>
           </select>
         </div>
-        <div class="product-grid">
+        <div class="product-grid" data-demo="product-grid">
           ${products
             .map(
               (p) => `
-            <article class="product-card">
+            <article class="product-card" data-product="${p.id}">
               <div class="product-img" aria-hidden="true">${p.emoji}</div>
               <div class="product-body">
                 <h3>${p.name}</h3>
@@ -149,11 +360,18 @@
     `;
     bindNav(root);
     root.querySelector('#sort').addEventListener('change', (e) => {
+      if (guardManual()) {
+        e.target.value = state.sort;
+        return;
+      }
       state.sort = e.target.value;
       render();
     });
     root.querySelectorAll('[data-add]').forEach((btn) => {
-      btn.addEventListener('click', () => addToCart(btn.getAttribute('data-add')));
+      btn.addEventListener('click', () => {
+        if (guardManual()) return;
+        addToCart(btn.getAttribute('data-add'));
+      });
     });
   }
 
@@ -172,11 +390,11 @@
 
     root.innerHTML = `
       ${headerBar()}
-      <div class="shop-screen">
-        <h2 style="margin-top:0">Your Cart</h2>
+      <div class="shop-screen shop-cart" data-demo="cart">
+        <h2 class="screen-title">Your Cart</h2>
         <table class="cart-table">
           <thead>
-            <tr><th>Item</th><th>Price</th><th>Qty</th><th></th></tr>
+            <tr><th scope="col">Item</th><th scope="col">Price</th><th scope="col">Qty</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
           </thead>
           <tbody>
             ${state.cart
@@ -193,21 +411,24 @@
               .join('')}
           </tbody>
         </table>
-        <p style="font-weight:700;margin:1rem 0">Total: ${formatPrice(cartTotal())}</p>
+        <p class="cart-total">Total: ${formatPrice(cartTotal())}</p>
         <button type="button" class="btn btn-primary" data-nav="checkout">Checkout</button>
       </div>
     `;
     bindNav(root);
     root.querySelectorAll('[data-remove]').forEach((btn) => {
-      btn.addEventListener('click', () => removeFromCart(btn.getAttribute('data-remove')));
+      btn.addEventListener('click', () => {
+        if (guardManual()) return;
+        removeFromCart(btn.getAttribute('data-remove'));
+      });
     });
   }
 
   function renderCheckout(root) {
     root.innerHTML = `
       ${headerBar()}
-      <div class="shop-screen checkout-form">
-        <h2 style="margin-top:0">Checkout: Your Information</h2>
+      <div class="shop-screen checkout-form" data-demo="checkout">
+        <h2 class="screen-title">Checkout: Your Information</h2>
         <form id="checkout-form">
           <div class="field">
             <label for="firstName">First Name</label>
@@ -221,14 +442,17 @@
             <label for="postalCode">Postal Code</label>
             <input id="postalCode" required value="${state.checkout.postalCode}" />
           </div>
-          <button type="submit" class="btn btn-primary">Continue</button>
-          <button type="button" class="btn btn-secondary" data-nav="cart" style="margin-left:0.5rem">Cancel</button>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Continue</button>
+            <button type="button" class="btn btn-secondary" data-nav="cart">Cancel</button>
+          </div>
         </form>
       </div>
     `;
     bindNav(root);
     root.querySelector('#checkout-form').addEventListener('submit', (e) => {
       e.preventDefault();
+      if (guardManual()) return;
       state.checkout = {
         firstName: root.querySelector('#firstName').value.trim(),
         lastName: root.querySelector('#lastName').value.trim(),
@@ -255,6 +479,7 @@
   function bindNav(root) {
     root.querySelectorAll('[data-nav]').forEach((el) => {
       el.addEventListener('click', () => {
+        if (guardManual()) return;
         state.view = el.getAttribute('data-nav');
         render();
       });
@@ -262,6 +487,7 @@
     const logout = root.querySelector('[data-action="logout"]');
     if (logout) {
       logout.addEventListener('click', () => {
+        if (guardManual()) return;
         state.view = 'login';
         state.cart = [];
         render();
@@ -294,6 +520,22 @@
     }
   }
 
-  window.ShopDemo = { render, addToCart, state };
+  window.ShopDemo = {
+    render,
+    addToCart,
+    state,
+    reset,
+    sleep,
+    highlight,
+    loginAnimated,
+    clearLoginError,
+    navigateAnimated,
+    addToCartAnimated,
+    fillCheckoutAnimated,
+    completeCheckoutAnimated,
+    logoutAnimated,
+    setSortAnimated,
+    setInteractionLocked,
+  };
   document.addEventListener('DOMContentLoaded', render);
 })();
