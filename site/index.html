@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="description" content="Playwright ecommerce E2E showcase — Page Object Model, CI, and a synced terminal + shop demo." />
   <title>Playwright Ecommerce Demo — QA Showcase</title>
   <link rel="stylesheet" href="css/styles.css" />
@@ -39,10 +39,22 @@
     </p>
   </header>
 
-  <div class="view-tabs" role="tablist" aria-label="Showcase panels">
-    <button type="button" class="view-tab active" role="tab" aria-selected="true" aria-controls="panel-shop" id="tab-shop" data-panel="shop">Shop</button>
-    <button type="button" class="view-tab" role="tab" aria-selected="false" aria-controls="panel-terminal" id="tab-terminal" data-panel="terminal">Terminal</button>
-    <button type="button" class="view-tab view-tab-split" role="tab" aria-selected="false" id="tab-split" data-panel="split" hidden>Split</button>
+  <div class="mobile-chrome" id="mobile-chrome">
+    <p class="mobile-sync-banner" id="mobile-sync-banner" role="status" aria-live="polite" hidden>
+      <span class="mobile-sync-banner__dot" aria-hidden="true"></span>
+      <span id="mobile-sync-banner-text">Synced demo — watch the shop update as tests pass</span>
+    </p>
+    <div class="view-tabs" role="tablist" aria-label="Showcase panels">
+      <button type="button" class="view-tab active" role="tab" aria-selected="true" aria-controls="panel-shop" id="tab-shop" data-panel="shop">
+        <span class="view-tab__label">Shop</span>
+        <span class="view-tab__hint">AUT</span>
+      </button>
+      <button type="button" class="view-tab" role="tab" aria-selected="false" aria-controls="panel-terminal" id="tab-terminal" data-panel="terminal">
+        <span class="view-tab__label">Terminal</span>
+        <span class="view-tab__hint">Runner</span>
+      </button>
+      <button type="button" class="view-tab view-tab-split" role="tab" aria-selected="false" id="tab-split" data-panel="split" hidden>Split</button>
+    </div>
   </div>
 
   <main class="showcase" id="showcase">

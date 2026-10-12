@@ -44,15 +44,66 @@
       shopPanel.hidden = true;
       termPanel.hidden = false;
     }
+    updateMobileSyncBanner(effective);
   }
 
-  function focusPanel(panel) {
+  function tabForPanel(panel) {
+    if (panel === 'terminal') return document.getElementById('tab-terminal');
+    if (panel === 'shop') return document.getElementById('tab-shop');
+    return null;
+  }
+
+  function pulseTab(panel) {
+    const tab = tabForPanel(panel);
+    if (!tab) return;
+    tab.classList.remove('view-tab--sync');
+    void tab.offsetWidth;
+    tab.classList.add('view-tab--sync');
+    window.clearTimeout(tab._syncTimer);
+    tab._syncTimer = window.setTimeout(() => {
+      tab.classList.remove('view-tab--sync');
+    }, 1400);
+  }
+
+  function updateMobileSyncBanner(panel) {
+    const banner = document.getElementById('mobile-sync-banner');
+    const textEl = document.getElementById('mobile-sync-banner-text');
+    if (!banner || !textEl || isWide()) return;
+    if (!document.body.classList.contains('demo-running')) {
+      banner.hidden = true;
+      return;
+    }
+    banner.hidden = false;
+    if (panel === 'shop') {
+      textEl.textContent = 'Shop updating — UI follows the passing tests';
+    } else if (panel === 'terminal') {
+      textEl.textContent = 'Tests running — switch to Shop to see the AUT';
+    } else {
+      textEl.textContent = 'Synced demo — watch the shop update as tests pass';
+    }
+  }
+
+  function syncBodyLayoutClass() {
+    document.body.classList.toggle('layout-mobile', !isWide());
+    document.body.classList.toggle('layout-split', isWide());
+  }
+
+  function focusPanel(panel, options = {}) {
+    const { pulse = true, scroll = true } = options;
     if (isWide()) {
       if (currentMode !== 'split') setPanelVisibility('split');
       return;
     }
     if (panel === 'terminal' || panel === 'shop') {
+      const changed = currentMode !== panel;
       setPanelVisibility(panel);
+      if (pulse && (changed || document.body.classList.contains('demo-running'))) {
+        pulseTab(panel);
+      }
+      updateMobileSyncBanner(panel);
+      if (scroll) {
+        document.getElementById('mobile-chrome')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
     }
   }
 
@@ -72,6 +123,7 @@
     });
 
     window.addEventListener('resize', () => {
+      syncBodyLayoutClass();
       if (splitTab) splitTab.hidden = !isWide();
       const showcase = document.getElementById('showcase');
       if (!isWide() && showcase.classList.contains('split-view')) {
@@ -81,8 +133,10 @@
       } else if (isWide() && document.body.classList.contains('demo-running')) {
         setPanelVisibility('split');
       }
+      updateMobileSyncBanner(currentMode === 'split' ? 'shop' : currentMode);
     });
 
+    syncBodyLayoutClass();
     if (isWide()) {
       setPanelVisibility('split');
     } else {
@@ -90,7 +144,7 @@
     }
   }
 
-  window.ShowcaseLayout = { focusPanel, setPanelVisibility };
+  window.ShowcaseLayout = { focusPanel, setPanelVisibility, pulseTab, updateMobileSyncBanner };
 
   document.addEventListener('DOMContentLoaded', initTabs);
 })();

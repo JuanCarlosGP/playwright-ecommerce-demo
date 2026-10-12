@@ -4,6 +4,9 @@
 (function () {
   let running = false;
   let abort = false;
+  let replayPending = false;
+  let lastRunTriggerAt = 0;
+  const RUN_CLICK_GUARD_MS = 700;
 
   function getScript() {
     return window.DemoOrchestrator?.FULL_SCRIPT || [];
@@ -84,6 +87,14 @@
     }
   }
 
+  function canTriggerRun() {
+    if (running || replayPending) return false;
+    const now = Date.now();
+    if (now - lastRunTriggerAt < RUN_CLICK_GUARD_MS) return false;
+    lastRunTriggerAt = now;
+    return true;
+  }
+
   async function startRun() {
     if (running) return;
     running = true;
@@ -115,22 +126,45 @@
   }
 
   function replay() {
+    replayPending = true;
     abort = true;
     running = false;
     setTimeout(() => {
       abort = false;
+      replayPending = false;
       startRun();
     }, 80);
+  }
+
+  function bindRunButton(btn, handler) {
+    if (!btn) return;
+    const onActivate = (e) => {
+      if (!canTriggerRun()) {
+        e.preventDefault();
+        return;
+      }
+      handler();
+    };
+    btn.addEventListener('click', onActivate);
+    btn.addEventListener(
+      'touchend',
+      (e) => {
+        if (!canTriggerRun()) {
+          e.preventDefault();
+        }
+      },
+      { passive: false },
+    );
   }
 
   function init() {
     const startBtn = document.getElementById('terminal-start');
     const replayBtn = document.getElementById('terminal-replay');
-    if (startBtn) startBtn.addEventListener('click', startRun);
-    if (replayBtn) {
-      replayBtn.addEventListener('click', replay);
-      replayBtn.disabled = false;
-    }
+    bindRunButton(startBtn, () => {
+      void startRun();
+    });
+    bindRunButton(replayBtn, replay);
+    if (replayBtn) replayBtn.disabled = false;
 
     const el = getOutputEl();
     if (el) {
